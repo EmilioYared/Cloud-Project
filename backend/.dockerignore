@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Environment files
+.env
+.env.*
+
+# Logs
+*.log
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+.mypy_cache
+.pytest_cache
+.coverage
+
+# Project specific
+chroma_db/
+uploads/
+data/
+models/
+*.pdf
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Deployment files
+k8s/
+helm/
+deploy.sh
+deploy-helm.sh
+deploy-ec2.sh
+test-local.bat
+test-local.sh
+
+# Documentation
+README*.md
+*.md
+testing.txt
+
+# Docker files
+docker-compose*.yml
+
+# Unused code
+query.py

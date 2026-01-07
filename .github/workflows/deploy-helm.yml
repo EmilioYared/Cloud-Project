@@ -1,0 +1,63 @@
+name: Update Helm Chart on EC2
+
+on:
+  push:
+    branches:
+      - Main
+    paths:
+      - 'backend/helm/**'
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  deploy-helm:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+      
+      - name: Update Helm chart on EC2
+        run: |
+          ssh -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            # Backup existing chart
+            cd ~
+            if [ -d "backend/helm/rag-api.backup" ]; then
+              rm -rf backend/helm/rag-api.backup
+            fi
+            cp -r backend/helm/rag-api backend/helm/rag-api.backup
+            
+            # Pull latest changes
+            cd backend
+            git pull origin Main
+            
+            # Upgrade Helm deployment
+            cd helm/rag-api
+            helm upgrade rag-api . \
+              --namespace rag-api \
+              --reuse-values
+            
+            # Wait for rollout
+            kubectl rollout status deployment/rag-api -n rag-api --timeout=5m
+            
+            echo " Helm chart updated successfully!"
+          EOF
+      
+      - name: Verify deployment
+        run: |
+          ssh -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            kubectl get pods -n rag-api
+            kubectl describe deployment rag-api -n rag-api | grep -A 5 "Replicas:"
+          EOF
+      
+      - name: Deployment summary
+        run: |
+          echo " Helm chart updated successfully!"
+          echo " Changes applied without rebuilding Docker image"
+          echo " API URL: http://${{ secrets.EC2_HOST }}:8000"
